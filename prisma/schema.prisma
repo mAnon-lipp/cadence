@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Exercise {
+  id         String   @id @default(uuid())
+  name       String
+  category   String
+  backSafety String
+  cue        String
+  steps      String[] @default([])
+  bpmMin     Int      @default(70)
+  bpmMax     Int      @default(95)
+  upBeats    Int      @default(4)
+  holdBeats  Int      @default(1)
+  downBeats  Int      @default(4)
+  cycles     Int      @default(6)
+  sourceUrl  String?
+  createdAt  DateTime @default(now())
+}
+
+model Activity {
+  id               String   @id @default(uuid())
+  date             DateTime @default(now())
+  source           String
+  mode             String?
+  avgBpm           Int?
+  exercisesDone    String[]
+  activityType     String?
+  note             String?
+  durationMinutes  Int
+  backFeelingAfter String
+  createdAt        DateTime @default(now())
+}

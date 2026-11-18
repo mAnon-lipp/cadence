@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-night: #0f1117;
+  --bg-slate: #1b1e2b;
+  --accent-primary: #f59e0b;
+  --accent-soft: #6ee7b7;
+}
+
+body {
+  background-color: var(--bg-night);
+  color: #f8fafc;
+  -webkit-tap-highlight-color: transparent;
+}
