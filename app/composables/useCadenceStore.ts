@@ -118,11 +118,20 @@ export function useCadenceStore() {
   };
 
   const enrichAllExercises = async () => {
-    const res = await $fetch<{ updated: number }>('/api/exercises/enrich', {
-      method: 'POST',
-    });
+    let totalUpdated = 0;
+    let remaining = 1;
+
+    while (remaining > 0) {
+      const res = await $fetch<{ updated: number; remaining: number }>('/api/exercises/enrich', {
+        method: 'POST',
+      });
+      totalUpdated += res.updated;
+      remaining = res.remaining;
+      if (res.updated === 0) break; // Sécurité anti-boucle infinie
+    }
+
     await fetchAll();
-    return res;
+    return { updated: totalUpdated };
   };
 
   const syncFlexibilityExercises = async () => {
@@ -178,6 +187,8 @@ export function useCadenceStore() {
         backState: 'sensible' as BackState,
       };
     }
+
+    
 
     const hoursSince = (Date.now() - new Date(last.date).getTime()) / (1000 * 60 * 60);
 

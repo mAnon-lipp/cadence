@@ -40,5 +40,12 @@ export default defineNuxtConfig({
       display: 'standalone',
       orientation: 'portrait',
     },
+    workbox: {
+      navigateFallback: null,
+      globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+    },
+    devOptions: {
+      enabled: false,
+    },
   },
 });

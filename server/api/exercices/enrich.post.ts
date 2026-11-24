@@ -2,42 +2,38 @@ import { GoogleGenAI, Type } from '@google/genai';
 
 export default defineEventHandler(async () => {
   const config = useRuntimeConfig();
-  const allExercises = await prisma.exercise.findMany();
 
-  if (!allExercises.length) return { updated: 0 };
+  if (!config.geminiApiKey) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'GEMINI_API_KEY manquante dans les variables Vercel.',
+    });
+  }
+
+  // On ne récupère que les exercices sans étapes détaillées, par lot de 4 max
+  const unenriched = await prisma.exercise.findMany({
+    where: {
+      steps: { isEmpty: true },
+    },
+    take: 4,
+  });
+
+  if (!unenriched.length) {
+    return { updated: 0, remaining: 0 };
+  }
 
   const ai = new GoogleGenAI({ apiKey: config.geminiApiKey });
 
-  // Détection des modèles Flash disponibles
-  let modelsToTry: string[] = ['gemini-2.5-flash', 'gemini-2.0-flash'];
-  try {
-    const pager = await ai.models.list();
-    const available: string[] = [];
-    for await (const m of pager) {
-      const name = m.name?.replace('models/', '') || '';
-      if (
-        name.includes('flash') &&
-        !name.includes('image') &&
-        !name.includes('audio') &&
-        !name.includes('tts') &&
-        !name.includes('thinking')
-      ) {
-        available.push(name);
-      }
-    }
-    if (available.length > 0) modelsToTry = available;
-  } catch {}
-
-  const prompt = `Tu es un kinésithérapeute et coach de mobilité spécialisé dans la protection du dos et la souplesse.
+  const prompt = `Tu es un kinésithérapeute spécialisé dans les douleurs lombaires et la souplesse.
 Pour chaque exercice de la liste suivante, rédige en français :
 1. "cue" : un mémo ultra-court (1 phrase max) à lire en plein mouvement.
 2. "steps" : un tableau de EXACTEMENT 3 consignes précises :
    - Étape 1 (Installation) : position exacte des mains, pieds, genoux et placement du bassin.
-   - Étape 2 (Mouvement & souffle) : comment entrer dans l'étirement lentement et quand inspirer/expirer.
+   - Étape 2 (Mouvement & souffle) : comment bouger lentement et quand inspirer/expirer.
    - Étape 3 (Sécurité dos) : le repère précis pour ne pas arrondir ni cambrer excessivement les lombaires.
 
 Exercices à détailler :
-${JSON.stringify(allExercises.map((e) => ({ id: e.id, name: e.name, cue: e.cue })))}`;
+${JSON.stringify(unenriched.map((e) => ({ id: e.id, name: e.name, cue: e.cue })))}`;
 
   const schema = {
     responseMimeType: 'application/json',
@@ -64,7 +60,7 @@ ${JSON.stringify(allExercises.map((e) => ({ id: e.id, name: e.name, cue: e.cue }
   let parsed: any = null;
   let lastErr: any = null;
 
-  for (const modelName of modelsToTry) {
+  for (const modelName of ['gemini-2.5-flash', 'gemini-2.0-flash']) {
     try {
       const res = await ai.models.generateContent({
         model: modelName,
@@ -81,7 +77,7 @@ ${JSON.stringify(allExercises.map((e) => ({ id: e.id, name: e.name, cue: e.cue }
   if (!parsed) {
     throw createError({
       statusCode: 502,
-      statusMessage: lastErr?.message || 'Impossible de contacter Gemini pour détailler les exercices.',
+      statusMessage: lastErr?.message || 'Erreur lors de l’appel à Gemini.',
     });
   }
 
@@ -99,5 +95,9 @@ ${JSON.stringify(allExercises.map((e) => ({ id: e.id, name: e.name, cue: e.cue }
     }
   }
 
-  return { updated: updatedCount };
+  const remaining = await prisma.exercise.count({
+    where: { steps: { isEmpty: true } },
+  });
+
+  return { updated: updatedCount, remaining };
 });
