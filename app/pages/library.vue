@@ -12,7 +12,17 @@ import {
 } from '@lucide/vue';
 import type { ExerciseCategory, BackSafety } from '~/data/exercises';
 
-const { exercises, addCustomExercise, addBatchExercises, enrichAllExercises } = useCadenceStore();
+const {
+  exercises,
+  addCustomExercise,
+  addBatchExercises,
+  enrichAllExercises,
+  syncFlexibilityExercises,
+} = useCadenceStore();
+
+onMounted(() => {
+  syncFlexibilityExercises();
+});
 
 const activeFilter = ref<'all' | ExerciseCategory>('all');
 const expandedId = ref<string | null>(null);
@@ -22,6 +32,7 @@ const filterOptions = [
   { value: 'all', label: 'Tous' },
   { value: 'decompression', label: 'Dos doux' },
   { value: 'mobilite', label: 'Mobilité' },
+  { value: 'souplesse', label: 'Souplesse' },
   { value: 'renfo', label: 'Renfo' },
   { value: 'inspi', label: 'Mes inspis' },
 ];

@@ -125,13 +125,23 @@ export function useCadenceStore() {
     return res;
   };
 
+  const syncFlexibilityExercises = async () => {
+    const res = await $fetch<{ added: number }>('/api/exercises/sync-flexibility', {
+      method: 'POST',
+    });
+    if (res.added > 0) {
+      await fetchAll();
+    }
+    return res;
+  };
+
   const buildSession = (mode: EnergyMode, backState: BackState) => {
     const targetCount = mode === 'survie' ? 2 : mode === 'equilibre' ? 4 : 6;
 
     const compatible = exercises.value.filter((ex) => {
       if (backState === 'sensible') return ex.category === 'decompression';
       if (backState === 'raide') {
-        return ex.category === 'decompression' || ex.category === 'mobilite' || ex.category === 'inspi';
+        return ['decompression', 'mobilite', 'souplesse', 'inspi'].includes(ex.category);
       }
       return true;
     });
@@ -200,7 +210,7 @@ export function useCadenceStore() {
 
     return {
       title: 'Routine du soir • 15 min',
-      subtitle: 'Un mix mobilité et gainage profond calé sur ta playlist.',
+      subtitle: 'Un mix mobilité, souplesse et gainage profond calé sur ta playlist.',
       mode: 'equilibre' as EnergyMode,
       backState: 'ok' as BackState,
     };
@@ -218,6 +228,7 @@ export function useCadenceStore() {
     addCustomExercise,
     addBatchExercises,
     enrichAllExercises,
+    syncFlexibilityExercises,
     buildSession,
   };
 }

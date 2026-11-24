@@ -16,6 +16,7 @@ export default defineEventHandler(async (event) => {
       downBeats: body.downBeats ?? 4,
       cycles: body.cycles ?? 6,
       sourceUrl: body.sourceUrl || null,
+      steps: body.steps ?? []
     },
   });
 });
